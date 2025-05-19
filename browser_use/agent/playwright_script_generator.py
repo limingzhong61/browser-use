@@ -259,6 +259,7 @@ class PlaywrightScriptGenerator:
 			logger.warning(f"Mapping legacy 'click_element_by_index' to 'click_element' ({step_info_str})")
 		index = params.get('index')
 		selector = self._get_selector_for_action(history_item, action_index_in_step)
+		goto_timeout = self._get_goto_timeout()
 		script_lines = []
 		if selector and index is not None:
 			escaped_selector = json.dumps(selector)
@@ -266,6 +267,9 @@ class PlaywrightScriptGenerator:
 			script_lines.append(
 				f'            await _try_locate_and_act(page, {escaped_selector}, "click", step_info={escaped_step_info})'
 			)
+			# click may goto new url
+			script_lines.append(f"            await page.wait_for_load_state('load', timeout={goto_timeout})")
+			script_lines.append('            await page.wait_for_timeout(1000)')  # Short pause
 		else:
 			script_lines.append(
 				f'            # Skipping {action_type} ({step_info_str}): missing index ({index}) or selector ({selector})'
